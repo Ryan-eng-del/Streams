@@ -1,6 +1,6 @@
 # Streams
 
-Streams is a [Grpc Go](https://github.com/grpc/grpc-go) Proxy server
+![图片展示](icon/stream.svg) Streams is a [Grpc Go](https://github.com/grpc/grpc-go) Proxy server
 
 ## Project Goal
 
