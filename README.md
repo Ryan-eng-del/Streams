@@ -13,6 +13,12 @@ over the internet. This includes:
 The project now exists as a **proof of concept**, with the key piece being the `proxy` package that
 is a generic gRPC reverse proxy handler.
 
+## Import
+
+```go
+go get -u github.com/Ryan-eng-del/Streams
+```
+
 ## Representations
 
 The original project is from [mwitkow/grpc-proxy](https://github.com/mwitkow/grpc-proxy), mwitkow was a great programmer and i admired him greatly. streams for the original project, adapted to the latest grpc standard and the latest golang version, and for the project's core functions, made a comment description. In addition, all the tests of the project have been passed. Streams project is also used as a dependency package of my gateway project [Forest](https://github.com/Ryan-eng-del/Forest) to provide Grpc proxy.

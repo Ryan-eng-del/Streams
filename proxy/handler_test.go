@@ -11,6 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
+	"github.com/Ryan-eng-del/Streams/proxy"
+	pb "github.com/Ryan-eng-del/Streams/test/service/proxy_test_service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -21,10 +25,6 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-
-	"fmt"
-	"grpc-proxy/proxy"
-	pb "grpc-proxy/test/service/proxy_test_service"
 )
 
 const (

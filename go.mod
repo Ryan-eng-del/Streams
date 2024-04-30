@@ -1,4 +1,4 @@
-module grpc-proxy
+module github.com/Ryan-eng-del/Streams
 
 go 1.21.3
 

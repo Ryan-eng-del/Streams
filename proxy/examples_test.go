@@ -4,7 +4,7 @@
 package proxy_test
 
 import (
-	"grpc-proxy/proxy"
+	"github.com/Ryan-eng-del/Streams/proxy"
 	"strings"
 
 	"golang.org/x/net/context"
