@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -59,23 +60,33 @@ type handler struct {
 // forwarding it to a ClientStream established against the relevant ClientConn.
 func (s *handler) handler(srv interface{}, serverStream grpc.ServerStream) error {
 	// little bit of gRPC internals never hurt anyone
+	// /fullMethodName format: proxy.testing.TestService/Ping
 	fullMethodName, ok := grpc.MethodFromServerStream(serverStream)
+
 	if !ok {
-		return grpc.Errorf(codes.Internal, "lowLevelServerStream not exists in context")
+		return status.Errorf(codes.Internal, "lowLevelServerStream not exists in context")
 	}
 	// We require that the director's returned context inherits from the serverStream.Context().
 	outgoingCtx, backendConn, err := s.director(serverStream.Context(), fullMethodName)
+
 	if err != nil {
 		return err
 	}
-	defer backendConn.Close()
-	
+
+	//! When you are testing, you need to comment out the next line of code
+  //! Otherwise, it will report an error which is the client connection is closing
+	// defer backendConn.Close()
+
 	clientCtx, clientCancel := context.WithCancel(outgoingCtx)
 	// TODO(mwitkow): Add a `forwarded` header to metadata, https://en.wikipedia.org/wiki/X-Forwarded-For.
+	// clientStream refers to the real server 
+	// serverStrem refers to the proxy server
 	clientStream, err := grpc.NewClientStream(clientCtx, clientStreamDescForProxying, backendConn, fullMethodName)
 	if err != nil {
 		return err
 	}
+
+	// So here, first of all, we need receive serverStream, them  send msd from serverStream to clientStream,because,clientStream refers to the real server 
 	// Explicitly *do not close* s2cErrChan and c2sErrChan, otherwise the select below will not terminate.
 	// Channels do not have to be closed, it is just a control flow mechanism, see
 	// https://groups.google.com/forum/#!msg/golang-nuts/pZwdYRGxCIk/qpbHxRRPJdUJ
@@ -90,13 +101,13 @@ func (s *handler) handler(srv interface{}, serverStream grpc.ServerStream) error
 				// this is the happy case where the sender has encountered io.EOF, and won't be sending anymore./
 				// the clientStream>serverStream may continue pumping though.
 				clientStream.CloseSend()
-				break
+				continue
 			} else {
 				// however, we may have gotten a receive error (stream disconnected, a read error etc) in which case we need
 				// to cancel the clientStream to the backend, let all of its goroutines be freed up by the CancelFunc and
 				// exit with an error to the stack
 				clientCancel()
-				return grpc.Errorf(codes.Internal, "failed proxying s2c: %v", s2cErr)
+				return status.Errorf(codes.Internal, "failed proxying s2c: %v", s2cErr)
 			}
 		case c2sErr := <-c2sErrChan:
 			// This happens when the clientStream has nothing else to offer (io.EOF), returned a gRPC error. In those two
@@ -110,8 +121,10 @@ func (s *handler) handler(srv interface{}, serverStream grpc.ServerStream) error
 			return nil
 		}
 	}
-	return grpc.Errorf(codes.Internal, "gRPC proxying should never reach this stage.")
+	return status.Errorf(codes.Internal, "gRPC proxying should never reach this stage.")
 }
+
+
 
 func (s *handler) forwardClientToServer(src grpc.ClientStream, dst grpc.ServerStream) chan error {
 	ret := make(chan error, 1)
@@ -126,6 +139,7 @@ func (s *handler) forwardClientToServer(src grpc.ClientStream, dst grpc.ServerSt
 				// This is a bit of a hack, but client to server headers are only readable after first client msg is
 				// received but must be written to server stream before the first msg is flushed.
 				// This is the only place to do it nicely.
+				// log.Printf("t2s header 前")
 				md, err := src.Header()
 				if err != nil {
 					ret <- err
@@ -135,11 +149,15 @@ func (s *handler) forwardClientToServer(src grpc.ClientStream, dst grpc.ServerSt
 					ret <- err
 					break
 				}
+				// log.Printf("t2s header 后")
 			}
+			// log.Printf("t2s receive 前")
+			// third: real server response data
 			if err := src.RecvMsg(f); err != nil {
 				ret <- err // this can be io.EOF which is happy case
 				break
 			}
+			// forth: proxy server response data
 			if err := dst.SendMsg(f); err != nil {
 				ret <- err
 				break
@@ -151,17 +169,24 @@ func (s *handler) forwardClientToServer(src grpc.ClientStream, dst grpc.ServerSt
 
 func (s *handler) forwardServerToClient(src grpc.ServerStream, dst grpc.ClientStream) chan error {
 	ret := make(chan error, 1)
+	// log.Printf("发送")
 	go func() {
 		f := &frame{}
 		for i := 0; ; i++ {
+			// log.Printf("s2t receive 前")
+			// first : proxy server receive message
 			if err := src.RecvMsg(f); err != nil {
 				ret <- err // this can be io.EOF which is happy case
 				break
 			}
+			// log.Printf("s2t receive 后")
+			// log.Printf("s2t send 前")
+			// second: send message to real server
 			if err := dst.SendMsg(f); err != nil {
 				ret <- err
 				break
 			}
+			// log.Printf("s2t send 后")
 		}
 	}()
 	return ret

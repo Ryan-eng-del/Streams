@@ -1,6 +1,6 @@
 # proxy
 --
-    import "github.com/mwitkow/grpc-proxy/proxy"
+    import "."
 
 Package proxy provides a reverse proxy handler for gRPC.
 
@@ -23,7 +23,7 @@ func Codec() grpc.Codec
 ```
 Codec returns a proxying grpc.Codec with the default protobuf codec as parent.
 
-See CodecWithParent.
+See CodecWithParent. 构建输出函数
 
 #### func  CodecWithParent
 
@@ -67,7 +67,7 @@ ServerOption.
 #### type StreamDirector
 
 ```go
-type StreamDirector func(ctx context.Context, fullMethodName string) (*grpc.ClientConn, error)
+type StreamDirector func(ctx context.Context, fullMethodName string) (context.Context, *grpc.ClientConn, error)
 ```
 
 StreamDirector returns a gRPC ClientConn to be used to forward the call to.
@@ -75,6 +75,12 @@ StreamDirector returns a gRPC ClientConn to be used to forward the call to.
 The presence of the `Context` allows for rich filtering, e.g. based on Metadata
 (headers). If no handling is meant to be done, a `codes.NotImplemented` gRPC
 error should be returned.
+
+The context returned from this function should be the context for the *outgoing*
+(to backend) call. In case you want to forward any Metadata between the inbound
+request and outbound requests, you should do it manually. However, you *must*
+propagate the cancel function (`context.WithCancel`) of the inbound context to
+the one returned.
 
 It is worth noting that the StreamDirector will be fired *after* all server-side
 stream interceptors are invoked. So decisions around authorization, monitoring

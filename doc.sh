@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script that checks the code for errors.
-
+# WORKDIR=$(cd $(dirname $0); pwd)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 function print_real_go_files {
@@ -14,7 +14,7 @@ function generate_markdown {
         dir=${i%/*}
         echo "$dir"
         cd ${dir}
-        ${GOPATH}/bin/godocdown -heading=Title -o DOC.md
+        godocdown -heading=Title -o DOC.md
         ln -s DOC.md README.md 2> /dev/null # can fail
         cd ${oldpwd}
     done;
