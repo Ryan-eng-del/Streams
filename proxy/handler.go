@@ -75,7 +75,7 @@ func (s *handler) handler(srv interface{}, serverStream grpc.ServerStream) error
 
 	//! When you are testing, you need to comment out the next line of code
   //! Otherwise, it will report an error which is the client connection is closing
-	// defer backendConn.Close()
+	defer backendConn.Close()
 
 	clientCtx, clientCancel := context.WithCancel(outgoingCtx)
 	// TODO(mwitkow): Add a `forwarded` header to metadata, https://en.wikipedia.org/wiki/X-Forwarded-For.

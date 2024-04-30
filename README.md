@@ -1,22 +1,21 @@
-# gRPC Proxy
+# Streams
 
-[![Travis Build](https://travis-ci.org/mwitkow/grpc-proxy.svg?branch=master)](https://travis-ci.org/mwitkow/grpc-proxy)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mwitkow/grpc-proxy)](https://goreportcard.com/report/github.com/mwitkow/grpc-proxy)
-[![GoDoc](http://img.shields.io/badge/GoDoc-Reference-blue.svg)](https://godoc.org/github.com/mwitkow/grpc-proxy)
-[![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-
-[gRPC Go](https://github.com/grpc/grpc-go) Proxy server
+Streams is a [Grpc Go](https://github.com/grpc/grpc-go) Proxy server
 
 ## Project Goal
 
 Build a transparent reverse proxy for gRPC targets that will make it easy to expose gRPC services
 over the internet. This includes:
- * no needed knowledge of the semantics of requests exchanged in the call (independent rollouts)
- * easy, declarative definition of backends and their mappings to frontends
- * simple round-robin load balancing of inbound requests from a single connection to multiple backends
+
+- no needed knowledge of the semantics of requests exchanged in the call (independent rollouts)
+- easy, declarative definition of backends and their mappings to frontends
 
 The project now exists as a **proof of concept**, with the key piece being the `proxy` package that
 is a generic gRPC reverse proxy handler.
+
+## Representations
+
+The original project is from [mwitkow/grpc-proxy](https://github.com/mwitkow/grpc-proxy), mwitkow was a great programmer and i admired him greatly. streams for the original project, adapted to the latest grpc standard and the latest golang version, and for the project's core functions, made a comment description. In addition, all the tests of the project have been passed. Streams project is also used as a dependency package of my gateway project [Forest](https://github.com/Ryan-eng-del/Forest)to provide Grpc proxy.
 
 ## Proxy Handler
 
@@ -24,6 +23,7 @@ The package [`proxy`](proxy/) contains a generic gRPC reverse proxy handler that
 not know about registered handlers or their data types. Please consult the docs, here's an exaple usage.
 
 Defining a `StreamDirector` that decides where (if at all) to send the request
+
 ```go
 director := func(ctx context.Context, fullMethodName string) (context.Context, *grpc.ClientConn, error) {
     // Make sure we never forward internal services.
@@ -45,6 +45,7 @@ director := func(ctx context.Context, fullMethodName string) (context.Context, *
     return ctx, nil, grpc.Errorf(codes.Unimplemented, "Unknown method")
 }
 ```
+
 Then you need to register it with a `grpc.Server`. The server may have other handlers that will be served
 locally:
 
@@ -58,4 +59,3 @@ pb_test.RegisterTestServiceServer(server, &testImpl{})
 ## License
 
 `grpc-proxy` is released under the Apache 2.0 license. See [LICENSE.txt](LICENSE.txt).
-
